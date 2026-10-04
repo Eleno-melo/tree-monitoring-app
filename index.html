@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b7a3e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Tree Monitor" />
+  <title>Tree Monitoring</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3ynpzyK2dvy2z0QDVVvWNn8UV3Z8A=" crossorigin="" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div>
+        <h1>Tree Monitoring</h1>
+        <p id="headerSubtitle">164 árvores</p>
+      </div>
+      <button class="icon-btn" id="exportBtn" title="Exportar dados">⇩</button>
+    </header>
+
+    <main>
+      <section id="dashboardView" class="view active">
+        <div class="hero-card">
+          <div>
+            <span class="eyebrow">Monitoramento anual</span>
+            <h2 id="yearTitle">Inspeção 2026</h2>
+            <p id="progressText">0 de 164 conferidas</p>
+          </div>
+          <div class="progress-ring" id="progressRing"><span id="progressPct">0%</span></div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><strong>164</strong><span>Total</span></div>
+          <div class="stat-card"><strong id="inspectedCount">0</strong><span>Conferidas</span></div>
+          <div class="stat-card"><strong id="pendingCount">164</strong><span>Pendentes</span></div>
+          <div class="stat-card"><strong id="attentionCount">0</strong><span>Atenção</span></div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title-row"><h3>Grupos</h3><span>Altura inicial</span></div>
+          <div class="group-row"><div><b>Árvores 001–077</b><small>Data de plantio não informada</small></div><span class="badge green">11–14 ft</span></div>
+          <div class="group-row"><div><b>Árvores 078–131</b><small>Plantadas em abril de 2025</small></div><span class="badge blue">8–9 ft</span></div>
+          <div class="group-row"><div><b>Árvores 132–141</b><small>Plantadas em abril de 2026</small></div><span class="badge purple">4–6 ft</span></div>
+          <div class="group-row"><div><b>Árvores 142–164</b><small>Plantadas em setembro de 2026</small></div><span class="badge amber">4–6 ft</span></div>
+        </div>
+
+        <button class="primary-btn full" id="startInspectionBtn">▶ Iniciar inspeção anual</button>
+      </section>
+
+      <section id="treesView" class="view">
+        <div class="toolbar">
+          <input id="searchInput" type="search" placeholder="Buscar por número..." />
+          <select id="statusFilter" aria-label="Filtrar por status">
+            <option value="all">Todas</option>
+            <option value="pending">Pendentes</option>
+            <option value="inspected">Conferidas</option>
+            <option value="attention">Atenção</option>
+          </select>
+        </div>
+        <div class="chips">
+          <button class="chip active" data-range="all">Todas</button>
+          <button class="chip" data-range="1-77">001–077</button>
+          <button class="chip" data-range="78-131">078–131</button>
+          <button class="chip" data-range="132-141">132–141</button>
+          <button class="chip" data-range="142-164">142–164</button>
+        </div>
+        <div id="treeList" class="tree-list"></div>
+      </section>
+
+      <section id="mapView" class="view">
+        <div class="map-note">Árvores aparecem no mapa depois que você salva a localização GPS na ficha de cada árvore.</div>
+        <div id="map"></div>
+      </section>
+
+      <section id="detailView" class="view">
+        <button class="back-link" id="backToList">← Voltar</button>
+        <div class="detail-hero">
+          <img id="treePhoto" alt="Foto da árvore" />
+          <div id="photoPlaceholder" class="photo-placeholder">🌳</div>
+          <label class="camera-btn">📷 Foto<input id="photoInput" type="file" accept="image/*" capture="environment" hidden /></label>
+        </div>
+        <div class="detail-heading">
+          <div><span class="eyebrow">Árvore</span><h2 id="detailTitle">#001</h2></div>
+          <span id="conditionPill" class="condition-pill">Pendente</span>
+        </div>
+        <div id="treeMeta" class="info-grid"></div>
+
+        <div class="section-card">
+          <div class="section-title-row"><h3>Nova medição</h3><span id="measurementYear"></span></div>
+          <label>Data da conferência<input id="inspectionDate" type="date" /></label>
+          <label>Altura (ft)<input id="heightInput" type="number" step="0.1" inputmode="decimal" placeholder="Ex.: 8.7" /></label>
+          <label>Condição
+            <select id="conditionInput">
+              <option value="Good">Boa</option>
+              <option value="Attention">Atenção</option>
+              <option value="Replace">Substituir</option>
+            </select>
+          </label>
+          <label>Observações<textarea id="notesInput" rows="3" placeholder="Opcional"></textarea></label>
+          <div class="gps-row"><button class="secondary-btn" id="gpsBtn">◎ Salvar GPS atual</button><small id="gpsStatus">Sem localização</small></div>
+          <button class="primary-btn full" id="saveMeasurementBtn">Salvar e ir para próxima árvore ›</button>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title-row"><h3>Histórico</h3><span>Crescimento</span></div>
+          <canvas id="growthChart" height="160"></canvas>
+          <div id="historyList" class="history-list"></div>
+        </div>
+      </section>
+
+      <section id="settingsView" class="view">
+        <div class="section-card">
+          <h3>Dados e backup</h3>
+          <p class="muted">Os dados ficam salvos neste aparelho. Faça backup regularmente.</p>
+          <button class="secondary-btn full" id="downloadBackupBtn">Exportar backup JSON</button>
+          <button class="secondary-btn full" id="downloadCsvBtn">Exportar CSV</button>
+          <label class="secondary-btn full center">Importar backup<input id="importBackupInput" type="file" accept="application/json" hidden /></label>
+        </div>
+        <div class="section-card">
+          <h3>Sobre esta versão</h3>
+          <p class="muted">Aplicativo instalável (PWA) para iPhone e Android. Funciona como app quando hospedado em HTTPS.</p>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-view="dashboardView">⌂<span>Resumo</span></button>
+      <button class="nav-btn" data-view="treesView">☷<span>Árvores</span></button>
+      <button class="nav-btn" data-view="mapView">⌖<span>Mapa</span></button>
+      <button class="nav-btn" data-view="settingsView">⚙<span>Dados</span></button>
+    </nav>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>
